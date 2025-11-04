@@ -43,13 +43,14 @@ int main(int argc, char * argv[]){
     void * p1 = mymalloc(10);
     void * p2 = mymalloc(100);
     void * p3 = mymalloc(200);
-
-    printMemList(mlist.head);
-
+    void * p4 = mymalloc(500);
     myfree(p3); p3 = NULL;
-    printMemList(mlist.head);
     myfree(p2); p2 = NULL;
-    printMemList(mlist.head);
+    void * p5 = mymalloc(150);
+    void * p6 = mymalloc(500);
+    myfree(p4); p4 = NULL;
+    myfree(p5); p5 = NULL;
+    myfree(p6); p6 = NULL;
     myfree(p1); p1 = NULL;
 }
 
@@ -107,7 +108,7 @@ mblock_t * findFreeBlockOfSize(size_t size){
 }
 
 void splitBlockAtSize(mblock_t * block, size_t newSize){
-    if (block->size <= newSize + MBLOCK_HEADER_SZ){
+    if (block->size <= newSize + MBLOCK_HEADER_SZ + 1){
         return;
     }
     mblock_t * newBlock = (mblock_t *)((char *)block + MBLOCK_HEADER_SZ + newSize);
