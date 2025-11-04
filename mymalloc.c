@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-//comment out the line below if you are compiling on Windows
 typedef struct _mblock_t {
     struct _mblock_t * prev;
     struct _mblock_t * next;
@@ -25,7 +24,6 @@ typedef struct _mlist_t {
 } mlist_t;
 
 mlist_t mlist = {NULL};
-
 
 int main(int argc, char * argv[]);
 void *mymalloc(size_t size);
@@ -150,7 +148,6 @@ void coallesceBlockPrev(mblock_t * freeBlock){
         }
     }
 }
-
 
 void coallesceBlockNext(mblock_t * freedBlock){
     if (freedBlock->next != NULL && freedBlock->status == 0){
