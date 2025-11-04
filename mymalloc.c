@@ -23,20 +23,64 @@ typedef struct _mlist_t {
     mblock_t * head;
 } mlist_t;
 
-_mlist_t mlist = NULL;
+mlist_t mlist = {NULL};
 
 
 int main(int argc, char * argv[]);
 void *mymalloc(size_t size);
 void myfree(void *ptr);
 
-
+void printMemList(const mblock_t* head);
 mblock_t * findLastMemlistBlock();
 mblock_t * findFreeBlockOfSize(size_t size);
 void splitBlockAtSize(mblock_t * block, size_t newSize);
 void coallesceBlockPrev(mblock_t * freeBlock);
 void coallesceBlockNext(mblock_t * freeBlock);
 mblock_t * growHeapBySize(size_t size);
+
+int main(int argc, char * argv[]){
+    void * p1 = mymalloc(10);
+    void * p2 = mymalloc(100);
+    void * p3 = mymalloc(200);
+
+    printMemList(mlist.head);
+
+    myfree(p3); p3 = NULL;
+    printMemList(mlist.head);
+    myfree(p2); p2 = NULL;
+    printMemList(mlist.head);
+    myfree(p1); p1 = NULL;
+}
+
+void *mymalloc(size_t size){
+    mblock_t * firstBlock = findFreeBlockOfSize(size);
+    if (firstBlock != NULL){
+        splitBlockAtSize(firstBlock, size);
+        firstBlock->status = 1;
+    }
+    else{
+        mblock_t * newBlock = growHeapBySize(size);
+        if (newBlock == NULL){
+            return NULL;
+        }
+        if (mlist.head == NULL){
+            mlist.head = newBlock;
+        }
+        firstBlock = newBlock;
+    }
+    return (void *)((char *)firstBlock + MBLOCK_HEADER_SZ);
+
+}
+
+void myfree(void *ptr){
+    if (ptr == NULL){
+        return;
+    }
+    mblock_t * blockToFree = (mblock_t *)((char *)ptr - MBLOCK_HEADER_SZ);
+    blockToFree->status = 0;
+    coallesceBlockPrev(blockToFree);
+    coallesceBlockNext(blockToFree);
+}
 
 
 mblock_t * findLastMemlistBlock(){
@@ -92,6 +136,7 @@ mblock_t * growHeapBySize(size_t size){
     }
     return newBlock;
 }
+
 void coallesceBlockPrev(mblock_t * freeBlock){
     if (freeBlock->prev != NULL && freeBlock->prev->status == 0){
         mblock_t * prevBlock = freeBlock->prev;
@@ -102,4 +147,32 @@ void coallesceBlockPrev(mblock_t * freeBlock){
             freeBlock->next->prev = prevBlock;
         }
     }
+}
+
+
+void coallesceBlockNext(mblock_t * freedBlock){
+    if (freedBlock->next != NULL && freedBlock->status == 0){
+        mblock_t * nextBlock = freedBlock->next;
+        freedBlock->size += MBLOCK_HEADER_SZ + nextBlock->size;
+        freedBlock->next = nextBlock->next;
+        if (nextBlock->next != NULL){
+            nextBlock->next->prev = freedBlock;
+        }
+    }
+}
+
+void printMemList(const mblock_t* head) {
+    const mblock_t* p = head;
+    size_t i = 0;
+    while(p != NULL) {
+        printf("[%ld] p: %p\n", i, (void*)p);
+        printf("[%ld] p->size: %ld\n", i, p->size);
+        printf("[%ld] p->status: %s\n", i, p->status > 0 ? "allocated" : "free");
+        printf("[%ld] p->prev: %p\n", i, (void*)p->prev);
+        printf("[%ld] p->next: %p\n", i, (void*)p->next);
+        printf("___________________________\n");
+        ++i;
+        p = p->next;
+    }
+    printf("===========================\n");
 }
